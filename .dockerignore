@@ -1,0 +1,13 @@
+.venv
+archive
+node_modules
+**/node_modules
+**/dist
+**/cdk.out
+certs
+.git
+.env
+artifacts
+**/__pycache__
+**/node_modules
+SyncGuard_Specification.docx

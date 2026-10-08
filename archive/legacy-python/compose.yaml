@@ -1,0 +1,68 @@
+x-app: &app
+  build: .
+  environment: &env
+    SYNCGUARD_DATABASE_URL: postgresql://syncguard:syncguard@postgres:5432/syncguard
+    SYNCGUARD_ERP_PATH: /data/erp.sqlite
+    SYNCGUARD_PM_URL: http://pm:8002
+    SYNCGUARD_LEASE_SECONDS: 10
+  volumes:
+    - erp-data:/data
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: syncguard
+      POSTGRES_PASSWORD: syncguard
+      POSTGRES_DB: syncguard
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U syncguard -d syncguard"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  init:
+    <<: *app
+    command: ["python", "-m", "syncguard.cli", "bootstrap"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+  erp:
+    <<: *app
+    command: ["uvicorn", "simulators.erp.app:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports: ["127.0.0.1:8001:8001"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+  pm:
+    <<: *app
+    command: ["uvicorn", "simulators.pm.app:app", "--host", "0.0.0.0", "--port", "8002"]
+    ports: ["127.0.0.1:8002:8002"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+  worker:
+    <<: *app
+    command: ["python", "-m", "syncguard.cli", "worker"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+      pm: {condition: service_started}
+  poller:
+    <<: *app
+    command: ["python", "-m", "syncguard.cli", "poll-loop"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+  dashboard:
+    image: nginx:alpine
+    ports: ["127.0.0.1:8080:80"]
+    volumes:
+      - ./dashboard:/usr/share/nginx/html:ro
+      - ./dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [api]
+
+volumes:
+  postgres-data:
+  erp-data:

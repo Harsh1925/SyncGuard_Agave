@@ -1,0 +1,50 @@
+x-app: &app
+  build: .
+  env_file: .env
+  environment: { HOST: 0.0.0.0 }
+  volumes: ['./certs:/app/certs:ro']
+  restart: unless-stopped
+  logging:
+    options: { max-size: 10m, max-file: '3' }
+services:
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    restart: unless-stopped
+    healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 2s, timeout: 3s, retries: 30 }
+  init:
+    <<: *app
+    restart: 'no'
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'bootstrap']
+  api:
+    <<: *app
+    depends_on:
+      { init: { condition: service_completed_successfully }, redis: { condition: service_healthy } }
+  erp:
+    <<: *app
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'erp']
+    depends_on: { init: { condition: service_completed_successfully } }
+  pm:
+    <<: *app
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'pm']
+    depends_on:
+      { init: { condition: service_completed_successfully }, redis: { condition: service_healthy } }
+  worker:
+    <<: *app
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'worker']
+    depends_on:
+      {
+        init: { condition: service_completed_successfully },
+        pm: { condition: service_started },
+        redis: { condition: service_healthy },
+      }
+  poller:
+    <<: *app
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'poll-loop']
+    depends_on:
+      { init: { condition: service_completed_successfully }, redis: { condition: service_healthy } }
+  dashboard:
+    build: { context: ., dockerfile: apps/dashboard/Dockerfile }
+    ports: ['80:80']
+    restart: unless-stopped
+    depends_on: [api]

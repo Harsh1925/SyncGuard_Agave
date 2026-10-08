@@ -1,0 +1,28 @@
+{
+  "name": "@syncguard/backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/cli.ts api",
+    "cli": "tsx --env-file-if-exists=../../.env src/cli.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/cli.ts api"
+  },
+  "dependencies": {
+    "@syncguard/contracts": "*",
+    "fastify": "^5.4.0",
+    "pg": "^8.16.0",
+    "redis": "^5.5.0",
+    "decimal.js": "^10.6.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.0",
+    "@fastify/swagger": "^9.5.0",
+    "@fastify/swagger-ui": "^6.1.1",
+    "tsx": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.0"
+  }
+}

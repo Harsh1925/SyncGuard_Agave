@@ -1,0 +1,236 @@
+:root {
+  --background: #f3f6fa;
+  --surface: #ffffff;
+  --ink: #152c44;
+  --muted: #4b6077;
+  --brand: #165ea0;
+  --danger: #ad243a;
+  --border: #c4cfdd;
+  --focus: #165ea0;
+  --scroll-thumb: #647891;
+  --scroll-track: #e2e8f0;
+  font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--background);
+}
+* {
+  box-sizing: border-box;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  scrollbar-width: auto;
+}
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border: 2px solid var(--scroll-track);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background: var(--ink);
+}
+body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px 5%;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  font-size: 24px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--ink);
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+a {
+  color: var(--brand);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+a:hover {
+  text-decoration-thickness: 2px;
+}
+a[aria-current] {
+  font-weight: 700;
+}
+main {
+  width: min(1120px, 90%);
+  margin: 40px auto 80px;
+}
+h1 {
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: 23px;
+  margin-bottom: 12px;
+}
+p {
+  max-width: 75ch;
+  color: var(--muted);
+}
+section {
+  margin-top: 40px;
+}
+button,
+input {
+  font: inherit;
+  border-radius: 4px;
+  padding: 10px 14px;
+  min-height: 44px;
+}
+button {
+  background: var(--brand);
+  color: var(--surface);
+  border: 1px solid var(--brand);
+  cursor: pointer;
+  min-width: 150px;
+}
+button:hover {
+  background: var(--ink);
+}
+button:active {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+input {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  width: min(100%, 430px);
+  caret-color: var(--brand);
+}
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+label {
+  font-weight: 600;
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+[role='status'] {
+  min-height: 28px;
+}
+.error {
+  color: var(--danger);
+}
+dl {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 2fr;
+  margin: 0;
+}
+dt,
+dd {
+  padding: 12px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+dd {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.table-scroll {
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+}
+th,
+td {
+  padding: 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+th {
+  color: var(--muted);
+  font-size: 14px;
+}
+td:first-child {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+}
+pre,
+code {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+}
+pre {
+  overflow: auto;
+  background: var(--surface);
+  padding: 20px;
+  border: 1px solid var(--border);
+  max-height: 460px;
+}
+li {
+  padding: 10px 0;
+  overflow-wrap: anywhere;
+}
+::selection {
+  color: var(--surface);
+  background: var(--brand);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@media (max-width: 600px) {
+  main {
+    margin-top: 24px;
+  }
+  dl {
+    grid-template-columns: 1fr;
+  }
+  dt {
+    border: 0;
+    padding-bottom: 0;
+  }
+  dd {
+    padding-top: 0;
+  }
+  form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+@media (forced-colors: active) {
+  * {
+    scrollbar-color: auto;
+  }
+}

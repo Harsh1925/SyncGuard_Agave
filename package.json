@@ -1,0 +1,41 @@
+{
+  "name": "syncguard",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "infra/cdk"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "build": "npm run build -w @syncguard/contracts && npm run build -w @syncguard/backend && npm run build -w @syncguard/dashboard && npm run build -w @syncguard/infra",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "lint": "eslint apps packages infra scripts",
+    "format": "prettier --write apps packages infra scripts '*.json' '*.yaml' '*.md' docs .github",
+    "format:check": "prettier --check apps packages infra scripts '*.json' '*.yaml' '*.md' docs .github",
+    "migrate": "npm run cli -w @syncguard/backend -- migrate",
+    "seed": "npm run cli -w @syncguard/backend -- seed",
+    "worker": "npm run cli -w @syncguard/backend -- worker",
+    "poll": "npm run cli -w @syncguard/backend -- poll",
+    "reconcile": "npm run cli -w @syncguard/backend -- reconcile",
+    "cdk:synth": "npm run synth -w @syncguard/infra"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "tsx": "^4.20.0",
+    "vitest": "^4.1.11",
+    "eslint": "^9.30.0",
+    "@eslint/js": "^9.30.0",
+    "typescript-eslint": "^8.35.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.6.0",
+    "@types/node": "^22.15.0",
+    "@playwright/test": "^1.55.0"
+  }
+}
