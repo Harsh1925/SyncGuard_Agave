@@ -51,7 +51,6 @@ export class SyncGuardStack extends Stack {
     const source = new assets.Asset(this, 'Source', {
       path: root,
       exclude: [
-        'archive/**',
         'node_modules/**',
         '**/node_modules/**',
         '.venv/**',

@@ -51,4 +51,5 @@ reconnect in this starter. Deleting Redis data cannot delete operations or tombs
 
 `npm run cli -w @syncguard/backend -- chaos-plan 42` creates a reproducible sequence.
 `POST /chaos/plans` records one durably. Neither executes faults or marks invariants passed.
-The TypeScript PRNG differs from Python's; old Python seeds reproduce only in the archive.
+The TypeScript PRNG differs from the earlier Python implementation; use TypeScript seeds
+for current runs. Historical Python code is available in Git history.

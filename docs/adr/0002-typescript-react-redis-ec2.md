@@ -1,6 +1,6 @@
 # ADR 0002: TypeScript, React, Redis, Postgres and CDK/EC2
 
-Status: active scaffold decision, 2026-10-06. Supersedes the Python technology choice in ADR 0001.
+Status: active scaffold decision, 2026-10-06. Replaces the earlier Python technology choice.
 
 The user explicitly selected TypeScript, React, Redis, Postgres, AWS CDK and EC2. Use an
 npm workspace with a Fastify backend, React/Vite dashboard, shared Zod contracts and
@@ -16,6 +16,6 @@ EC2 runs the demo containers and Redis; private RDS holds durable state. Use SSM
 Secrets Manager credentials, verified RDS TLS and CIDR-restricted HTTP access. Preserve
 the two-page dashboard and keep the thin AI workload disabled until safe ERP writes exist.
 
-The old scaffold stays under archive/legacy-python as reference. This architecture remains
-a bounded single-instance demo; final distributed correctness is established through the
+The previous scaffold is available in Git history. This architecture remains a bounded
+single-instance demo; final distributed correctness is established through the
 specification's acceptance tests, not the technology switch alone.

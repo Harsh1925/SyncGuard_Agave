@@ -12,7 +12,7 @@ service. No AWS deployment has been performed.
   deletion protection and RETAIN removal policy.
 - HTTP ingress only from `allowedCidr`; no SSH rule; RDS ingress only from compute.
 - Instance role with SSM administration plus scoped source-asset and secret read grants.
-- Packaged source asset, excluding environment/secrets, Python archive, installed
+- Packaged source asset, excluding environment/secrets, installed
   dependencies, build output and local artifacts.
 - User-data bootstrap downloading the source, RDS certificate bundle and secret, then
   starting the Compose deployment through systemd.

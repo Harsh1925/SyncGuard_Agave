@@ -15,5 +15,4 @@ and explicit extension points. Its presence does not certify the specification's
 acceptance matrix. See `docs/implementation-status.md` for what is implemented and deferred.
 
 Active implementation: TypeScript/Node, React/Vite, Postgres, Redis and AWS CDK/EC2.
-The superseded Python scaffold lives under archive/legacy-python and is not built or tested
-by the active npm workspace. Redis supplies disposable acceleration; Postgres owns correctness.
+Redis supplies disposable acceleration; Postgres owns correctness.

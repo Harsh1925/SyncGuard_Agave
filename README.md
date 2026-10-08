@@ -2,7 +2,7 @@
 
 Fault-tolerant ERP → PM invoice synchronization scaffold using **TypeScript, React, Redis,
 Postgres, AWS CDK and EC2**. The finalized `SyncGuard_Specification.docx` remains unchanged.
-The previous Python scaffold is preserved under `archive/legacy-python/` and is inactive.
+The repository contains the active TypeScript implementation.
 
 ## Project structure
 
@@ -39,7 +39,6 @@ SyncGuard_Agave/
 │   └── bootstrap.sh          # EC2 setup, Secrets Manager and systemd startup
 ├── scripts/                  # Dev process launcher and read-only smoke checks
 ├── docs/                     # Migration details, code walkthrough, runbook and status
-├── archive/legacy-python/    # Previous scaffold, excluded from active tooling
 ├── .github/workflows/ci.yaml
 ├── compose.yaml              # Local Postgres + Redis + all app services
 ├── compose.aws.yaml          # EC2 services using external RDS

@@ -15,5 +15,5 @@
 | AI ingress        | Extractor interface, deterministic reference/duplicate validation, fail-closed endpoint                         | Provider and durable safe ERP write path                                                |
 | AWS               | TypeScript CDK EC2/private RDS/IAM/source stack and Compose/systemd bootstrap                                   | Actual AWS rollout, boot/recovery evidence, HTTPS if needed beyond a local/demo scope   |
 
-See verification.md for actual checks. The archived Python tests are not the active stack's
+See verification.md for actual checks. Historical Python tests are not the active stack's
 validation evidence. No completed chaos run or public reliability percentage is claimed.

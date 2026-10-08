@@ -26,8 +26,8 @@ ERP-authoritative Invoice flow and Postgres durability boundaries.
 
 ## Files and folder changes
 
-- Preserved the previous code under `archive/legacy-python/`. It is excluded from npm
-  builds, current tests, formatting and Docker/CDK source assets.
+- Removed the superseded Python scaffold and its local tooling artifacts after the
+  TypeScript migration. Earlier code remains available in Git history.
 - Added `apps/backend/src/` with domain, adapters, state, engine, API, simulators, chaos
   and ingress modules. The API, worker, poller and simulators have independent CLI commands.
 - Added `apps/dashboard/src/` with a shared shell, Health and Operations pages, API helpers,
