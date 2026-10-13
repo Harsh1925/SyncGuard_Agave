@@ -24,7 +24,11 @@
     "worker": "npm run cli -w @syncguard/backend -- worker",
     "poll": "npm run cli -w @syncguard/backend -- poll",
     "reconcile": "npm run cli -w @syncguard/backend -- reconcile",
-    "cdk:synth": "npm run synth -w @syncguard/infra"
+    "cdk:synth": "npm run synth -w @syncguard/infra",
+    "demo": "tsx scripts/demo.ts",
+    "test:integration": "tsx scripts/integration.ts",
+    "chaos": "tsx scripts/chaos.ts",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

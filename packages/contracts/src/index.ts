@@ -90,3 +90,22 @@ export interface ChaosPlan {
   sequence: { step: number; fault: string }[];
   invariants: InvariantResult[];
 }
+export interface ChaosRun {
+  id: string;
+  seed: string;
+  status: 'planned' | 'running' | 'completed' | 'failed';
+  configuration: Record<string, unknown>;
+  failure_sequence: unknown[];
+  operation_counts: {
+    evidence?: { fault: string; passed: boolean; detail: unknown }[];
+    error?: string;
+  };
+  invariant_results: InvariantResult[] | null;
+  created_at: string;
+}
+export interface DriftReport {
+  id: string;
+  logical_id: string;
+  detected_at: string;
+  resolved_at: string | null;
+}

@@ -3,5 +3,8 @@
   "sourceRoots": ["apps/dashboard/src"],
   "locale": "en-US",
   "canonicalMap": "UX-CONTRACT.md",
-  "requiredCapabilities": ["Form", "Scrollbar", "Toast", "CRUD"]
+  "requiredCapabilities": ["Form", "Scrollbar", "Toast", "CRUD", "Select/Listbox"],
+  "ownership": {
+    "Select/Listbox": "native"
+  }
 }

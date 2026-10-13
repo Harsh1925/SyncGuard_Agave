@@ -51,9 +51,30 @@ describe('HTTP trust boundaries', () => {
     app = await buildApi(unusablePool, loadSettings({}), new RedisSupport());
     expect((await app.inject('/operations/not-a-uuid')).statusCode).toBe(400);
   });
-  it('fails closed on unfinished AI financial ingress', async () => {
+  it('fails closed when LLM extraction is not configured', async () => {
     app = await buildApi(unusablePool, loadSettings({}), new RedisSupport());
-    expect((await app.inject({ method: 'POST', url: '/ingress/invoices' })).statusCode).toBe(501);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/ingress/invoices',
+          payload: {
+            operation_id: '00000000-0000-4000-8000-000000000001',
+            document: 'Invoice',
+            mode: 'llm',
+          },
+        })
+      ).statusCode,
+    ).toBe(503);
+  });
+  it('blocks destructive demo controls against the normal database', async () => {
+    app = await buildApi(unusablePool, loadSettings({}), new RedisSupport());
+    expect(
+      (await app.inject({ method: 'POST', url: '/chaos/runs', payload: { seed: 42 } })).statusCode,
+    ).toBe(403);
+    expect(
+      (await app.inject({ method: 'POST', url: '/simulator/faults', payload: {} })).statusCode,
+    ).toBe(403);
   });
   it('refuses chaos seeds outside the declared range', async () => {
     app = await buildApi(unusablePool, loadSettings({}), new RedisSupport());

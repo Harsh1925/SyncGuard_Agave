@@ -36,6 +36,6 @@ export function pendingResults(): InvariantResult[] {
   ].map((name) => ({
     name,
     passed: null,
-    evidence: 'Not executed: scenario runner remains a scaffold extension',
+    evidence: 'Not evaluated: this run has not completed its assertions',
   }));
 }

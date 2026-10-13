@@ -6,7 +6,9 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.detail ?? `Request failed (${response.status})`);
+    throw new Error(
+      body.detail ?? body.reasons?.join(', ') ?? `Request failed (${response.status})`,
+    );
   }
   return response.json() as Promise<T>;
 }

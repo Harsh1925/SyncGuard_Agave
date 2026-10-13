@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createPool, migrate, transaction } from '../src/state/database.js';
 import { enqueueChange, claim } from '../src/state/repository.js';
@@ -5,6 +6,8 @@ import { RedisSupport } from '../src/state/redis.js';
 import { SnapshotDetector } from '../src/engine/detector.js';
 import { SyncWorker } from '../src/engine/worker.js';
 import { ERPAdapter } from '../src/adapters/erp.js';
+import { UpstreamError } from '../src/adapters/pm.js';
+import { buildApi } from '../src/api/app.js';
 import { buildPM } from '../src/simulators/pm.js';
 import { seed } from '../src/simulators/erp.js';
 import { loadSettings } from '../src/config.js';
@@ -24,7 +27,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres durability integration
   beforeEach(async () => {
     await migrate(pool);
     await pool.query(
-      'TRUNCATE audit_events,jobs,operations,snapshot_members,snapshots,records,drift_reports,chaos_runs,pm_sim.receipts,pm_sim.invoices,erp_sim."AP_INV",erp_sim."AP_VND",erp_sim.initialization CASCADE',
+      'TRUNCATE ingress_operations,simulator_faults,audit_events,jobs,operations,snapshot_members,snapshots,records,drift_reports,chaos_runs,pm_sim.receipts,pm_sim.invoices,erp_sim."AP_INV",erp_sim."AP_VND",erp_sim.initialization CASCADE',
     );
   });
   afterAll(async () => pool.end());
@@ -60,6 +63,26 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres durability integration
         .n,
     ).toBe(1);
   });
+  it('renews the claim while a slow destination write holds the record fence', async () => {
+    await enqueue();
+    let committed = false;
+    const worker = new SyncWorker(
+      pool,
+      loadSettings({ LEASE_SECONDS: '1' }),
+      {
+        verify: async () => committed,
+        write: async () => {
+          await sleep(1500);
+          committed = true;
+        },
+      },
+      redis,
+    );
+    const running = worker.runOnce();
+    await sleep(1100);
+    expect(await transaction(pool, (client) => claim(client, 'racing-worker', 1))).toBe(null);
+    await running;
+  });
   it('expired claims can be reclaimed with a new claim token', async () => {
     await enqueue();
     const first = await transaction(pool, (client) => claim(client, 'a', 1));
@@ -91,6 +114,45 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres durability integration
       (await pool.query('SELECT status FROM operations WHERE operation_id=$1', [op])).rows[0]
         .status,
     ).toBe('succeeded');
+  });
+  it('terminal failures stay visible and replay reuses the same operation', async () => {
+    const operation = await enqueue();
+    const worker = new SyncWorker(
+      pool,
+      loadSettings({ MAX_ATTEMPTS: '1' }),
+      {
+        verify: async () => false,
+        write: async () => {
+          throw new UpstreamError(503, 'Unavailable');
+        },
+      },
+      redis,
+    );
+    await worker.runOnce();
+    expect(
+      (await pool.query('SELECT status FROM operations WHERE operation_id=$1', [operation])).rows[0]
+        .status,
+    ).toBe('failed');
+    const app = await buildApi(pool, loadSettings({}), redis);
+    expect(
+      (await app.inject({ method: 'POST', url: `/operations/${operation}/replay` })).statusCode,
+    ).toBe(202);
+    await new SyncWorker(
+      pool,
+      loadSettings({}),
+      {
+        verify: async () => true,
+        write: async () => {
+          throw new Error('Recovery must verify first');
+        },
+      },
+      redis,
+    ).runOnce();
+    expect(
+      (await pool.query('SELECT status FROM operations WHERE operation_id=$1', [operation])).rows[0]
+        .status,
+    ).toBe('succeeded');
+    await app.close();
   });
   it('bootstrap preserves deliberate source deletion', async () => {
     await seed(pool);

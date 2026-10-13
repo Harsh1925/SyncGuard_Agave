@@ -21,3 +21,4 @@ coverage/
 certs/
 test-results/
 playwright-report/
+docs/demo-video.md

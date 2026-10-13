@@ -27,3 +27,15 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+      - name: Executed portfolio demo
+        run: npm run demo -- 42
+      - name: Seeded chaos acceptance
+        run: npm run chaos -- 42 20
+      - name: Install browser for UI acceptance
+        run: npx playwright install --with-deps chromium
+      - name: Failure Lab browser acceptance
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-evidence
+          path: artifacts/*-report.json

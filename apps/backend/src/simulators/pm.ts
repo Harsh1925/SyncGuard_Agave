@@ -1,4 +1,6 @@
 import type pg from 'pg';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { consumeFault } from '../chaos/simulator.js';
 import { z } from 'zod';
 import { invoiceSchema, invoiceBodySchema } from '@syncguard/contracts';
 import { normalizeInvoice, logicalId } from '../domain/invoice.js';
@@ -21,11 +23,11 @@ const writeSchema = z
     (body) => (body.action === 'upsert') === (body.invoice !== null),
     'Upsert requires an invoice; delete requires null',
   );
-export async function buildPM(pool: pg.Pool, redis: RedisSupport) {
+export async function buildPM(pool: pg.Pool, redis: RedisSupport, controls = false) {
   const app = await server('Modern PM simulator');
   app.addHook('onRequest', async (request, reply) => {
     if (request.url === '/health') return;
-    if (!(await redis.allow(`syncguard:pm-rate:${request.ip}`, 100, 60)))
+    if (!(await redis.allow(`syncguard:pm-rate:${request.ip}`, controls ? 100000 : 100, 60)))
       return reply
         .header('Retry-After', '60')
         .code(429)
@@ -85,6 +87,12 @@ export async function buildPM(pool: pg.Pool, redis: RedisSupport) {
     async (request, reply) => {
       const id = z.string().uuid().parse(request.params.id);
       const body = writeSchema.parse(request.body);
+      const fault = controls ? await consumeFault(pool, 'pm') : undefined;
+      if (fault?.delay_ms && fault.kind !== 'lost_response') await sleep(fault.delay_ms);
+      if (fault?.kind === 'transient_failure')
+        return reply.code(503).send({ detail: 'Injected upstream failure' });
+      if (fault?.kind === 'rate_limit')
+        return reply.header('Retry-After', '1').code(429).send({ detail: 'Injected rate limit' });
       if (body.invoice) body.invoice = normalizeInvoice(body.invoice);
       if (body.invoice && logicalId(body.invoice) !== id)
         return reply.code(400).send({ detail: 'Business identity does not match logical ID' });
@@ -129,6 +137,12 @@ export async function buildPM(pool: pg.Pool, redis: RedisSupport) {
         );
         return { status: 200, duplicate: false };
       });
+      if (fault?.kind === 'lost_response' && result.status === 200) {
+        // Commit has completed. Destroy the response transport to make the outcome uncertain.
+        reply.hijack();
+        request.raw.socket.destroy();
+        return reply;
+      }
       return reply.code(result.status).send({ id, ...result });
     },
   );

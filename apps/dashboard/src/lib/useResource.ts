@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-export function useResource<T>(loader: (signal: AbortSignal) => Promise<T>) {
+import { useCallback, useEffect, useState } from 'react';
+export function useResource<T>(loader: (signal: AbortSignal) => Promise<T>, intervalMs = 0) {
   const [state, setState] = useState<{ data: T | null; loading: boolean; error: string | null }>({
     data: null,
     loading: true,
@@ -35,5 +35,11 @@ export function useResource<T>(loader: (signal: AbortSignal) => Promise<T>) {
       controller.abort();
     };
   }, [loader, revision]);
-  return { ...state, refresh: () => setRevision((value) => value + 1) };
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  useEffect(() => {
+    if (!intervalMs || state.loading) return;
+    const timer = setTimeout(refresh, intervalMs);
+    return () => clearTimeout(timer);
+  }, [intervalMs, state.loading, revision, refresh]);
+  return { ...state, refresh };
 }

@@ -14,7 +14,7 @@ source invoices and guards legacy source migration before the new poller starts.
 
 EC2 runs the demo containers and Redis; private RDS holds durable state. Use SSM, generated
 Secrets Manager credentials, verified RDS TLS and CIDR-restricted HTTP access. Preserve
-the two-page dashboard and keep the thin AI workload disabled until safe ERP writes exist.
+the two-page dashboard and require the durable validated ingress service for all extracted invoice writes.
 
 The previous scaffold is available in Git history. This architecture remains a bounded
 single-instance demo; final distributed correctness is established through the

@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { ChaosPlan } from '@syncguard/contracts';
-import { loadOperation, createPlan } from '../lib/api.js';
+import { loadOperation } from '../lib/api.js';
 import { useResource } from '../lib/useResource.js';
+import { FailureLab } from '../components/FailureLab.js';
 import { Status } from '../components/Status.js';
 const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
@@ -17,11 +17,6 @@ export function Operations() {
     [id],
   );
   const state = useResource(loader);
-  const [seed, setSeed] = useState('42');
-  const seedRef = useRef<HTMLInputElement>(null);
-  const [plan, setPlan] = useState<ChaosPlan | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [chaosStatus, setChaosStatus] = useState({ message: '', error: false });
   function lookup(event: FormEvent) {
     event.preventDefault();
     if (!uuid.test(input.trim())) {
@@ -32,29 +27,6 @@ export function Operations() {
     setValidation('');
     if (id === input.trim()) state.refresh();
     else setParams({ operation_id: input.trim() });
-  }
-  async function generate(event: FormEvent) {
-    event.preventDefault();
-    const value = Number(seed);
-    if (!seed || !Number.isInteger(value) || value < 0 || value > 0xffffffff) {
-      setChaosStatus({ message: 'Enter an integer seed from 0 to 4294967295.', error: true });
-      seedRef.current?.focus();
-      return;
-    }
-    if (busy) return;
-    setBusy(true);
-    setChaosStatus({ message: 'Creating plan…', error: false });
-    try {
-      setPlan(await createPlan(value));
-      setChaosStatus({
-        message: 'Plan recorded. Invariants have not been executed.',
-        error: false,
-      });
-    } catch (error) {
-      setChaosStatus({ message: `${(error as Error).message}. Try again.`, error: true });
-    } finally {
-      setBusy(false);
-    }
   }
   return (
     <>
@@ -100,37 +72,11 @@ export function Operations() {
           </li>
         ))}
       </ol>
-      <section aria-labelledby="chaos-title">
-        <h2 id="chaos-title">Seeded chaos plan</h2>
-        <p>
-          A plan records a reproducible failure sequence. The scenario runner and invariant proof
-          are extension points in this scaffold.
-        </p>
-        <form onSubmit={generate} noValidate>
-          <label htmlFor="seed">Seed</label>
-          <input
-            ref={seedRef}
-            id="seed"
-            type="number"
-            value={seed}
-            onChange={(event) => setSeed(event.target.value)}
-            aria-invalid={chaosStatus.error}
-            aria-describedby="chaos-status"
-          />
-          <button disabled={busy} aria-busy={busy}>
-            Create plan
-          </button>
-        </form>
-        <Status id="chaos-status" message={chaosStatus.message} error={chaosStatus.error} />
-        <pre>{plan ? JSON.stringify(plan, null, 2) : 'No plan created yet.'}</pre>
-      </section>
-      <section>
-        <h2>Deterministic fault hooks</h2>
-        <p>
-          Activate a named boundary in a disposable worker process as documented in the runbook.
-        </p>
-        <code>AFTER_EXTERNAL_WRITE_BEFORE_LOCAL_COMPLETION</code>
-      </section>
+      <FailureLab
+        key={id}
+        operation={state.data?.operation ?? null}
+        startCursor={state.data?.timeline.at(-1)?.id ?? '0'}
+      />
     </>
   );
 }

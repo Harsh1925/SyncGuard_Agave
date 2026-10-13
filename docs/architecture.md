@@ -39,3 +39,10 @@ Implementation references: [node-postgres transactions](https://node-postgres.co
 [Redis Node client](https://redis.io/docs/latest/develop/clients/nodejs/connect/),
 [Vite setup](https://vite.dev/guide/), and [AWS CDK guide](https://docs.aws.amazon.com/cdk/v2/guide/home.html).
 Correctness still requires the recorded acceptance tests, not just these building blocks.
+
+The executable Failure Lab spawns fault-enabled child processes only in the explicitly
+isolated demo configuration. Simulator fault settings and run evidence are durable. The
+invoice ingress service records and freezes an untrusted extraction proposal, validates
+references and uniqueness, and transactionally verifies the simulated ERP write. Accepted
+own-write fingerprints are correlated while normal ERP-to-PM propagation remains enabled.
+No new connector, bidirectional authority, or entity has been added.

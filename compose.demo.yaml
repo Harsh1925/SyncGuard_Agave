@@ -1,0 +1,72 @@
+# Separate recording environment; no application database is reset or reused.
+x-app: &app
+  build: .
+  environment:
+    DATABASE_URL: postgresql://syncguard:syncguard@postgres:5432/syncguard_demo
+    REDIS_URL: redis://redis:6379
+    PM_URL: http://pm:8002
+    HOST: 0.0.0.0
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPENAI_MODEL: ${OPENAI_MODEL:-}
+    LEASE_SECONDS: 1
+    DEMO_CONTROLS: true
+  depends_on:
+    init: { condition: service_completed_successfully }
+    redis: { condition: service_healthy }
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      { POSTGRES_USER: syncguard, POSTGRES_PASSWORD: syncguard, POSTGRES_DB: syncguard_demo }
+    volumes: ['demo-data:/var/lib/postgresql/data']
+    healthcheck:
+      {
+        test: ['CMD-SHELL', 'pg_isready -U syncguard -d syncguard_demo'],
+        interval: 2s,
+        timeout: 3s,
+        retries: 30,
+      }
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 2s, timeout: 3s, retries: 30 }
+  init:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://syncguard:syncguard@postgres:5432/syncguard_demo
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'bootstrap']
+    depends_on: { postgres: { condition: service_healthy } }
+  api:
+    <<: *app
+    ports: ['127.0.0.1:8100:8000']
+  erp:
+    <<: *app
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'erp']
+    ports: ['127.0.0.1:8101:8001']
+  pm:
+    <<: *app
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'pm']
+    ports: ['127.0.0.1:8102:8002']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:8002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  demo:
+    <<: *app
+    profiles: ['runner']
+    command: ['./node_modules/.bin/tsx', 'apps/backend/src/cli.ts', 'demo', '42']
+    depends_on:
+      { pm: { condition: service_healthy }, init: { condition: service_completed_successfully } }
+  dashboard:
+    build: { context: ., dockerfile: apps/dashboard/Dockerfile }
+    ports: ['127.0.0.1:8180:80']
+    depends_on: [api]
+volumes:
+  demo-data:

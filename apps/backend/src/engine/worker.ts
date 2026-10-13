@@ -30,6 +30,8 @@ export class SyncWorker {
     const client = await this.pool.connect();
     let key: string | null = null;
     let locked = false;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
+    let renewal: Promise<unknown> | null = null;
     try {
       let operation = await getOperation(client, job.operation_id);
       key = operation.logical_id;
@@ -66,6 +68,23 @@ export class SyncWorker {
         });
         return true;
       }
+      heartbeat = setInterval(
+        () => {
+          if (renewal) return;
+          renewal = client
+            .query(
+              "UPDATE jobs SET lease_until=now()+$1*interval '1 second' WHERE id=$2 AND claim_token=$3 AND status='claimed'",
+              [this.settings.LEASE_SECONDS, job.id, job.claim_token],
+            )
+            .catch((error) =>
+              console.error('Lease renewal failed; record fence still protects writes', error),
+            )
+            .finally(() => {
+              renewal = null;
+            });
+        },
+        Math.max(200, (this.settings.LEASE_SECONDS * 1000) / 3),
+      );
       try {
         await inTransaction(client, async () => {
           await client.query(
@@ -126,6 +145,8 @@ export class SyncWorker {
         });
       }
     } finally {
+      if (heartbeat) clearInterval(heartbeat);
+      if (renewal) await renewal;
       try {
         if (locked) await client.query('SELECT pg_advisory_unlock(hashtextextended($1,0))', [key]);
       } finally {

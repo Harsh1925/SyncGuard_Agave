@@ -6,6 +6,8 @@ node_modules
 certs
 .git
 .env
+.env.*
+docs/demo-video.md
 artifacts
 **/__pycache__
 SyncGuard_Specification.docx

@@ -1,5 +1,8 @@
 import type pg from 'pg';
 import type { Invoice, Vendor } from '@syncguard/contracts';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { consumeFault } from '../chaos/simulator.js';
+import { hit } from '../chaos/faults.js';
 import { normalizeInvoice } from '../domain/invoice.js';
 
 export interface LegacyInvoice {
@@ -25,15 +28,28 @@ export function fromERP(row: LegacyInvoice): Invoice {
   });
 }
 export class ERPAdapter {
-  constructor(private pool: pg.Pool) {}
+  constructor(
+    private pool: pg.Pool,
+    private controls = false,
+  ) {}
   async snapshot(): Promise<Invoice[]> {
+    const fault = this.controls ? await consumeFault(this.pool, 'erp') : undefined;
+    if (fault?.delay_ms) await sleep(fault.delay_ms);
+    if (fault?.kind === 'transient_failure') throw new Error('Injected ERP read failure');
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
       const rows = await client.query<LegacyInvoice>(
         `SELECT *,"INV_DT"::text AS "INV_DT" FROM erp_sim."AP_INV" ORDER BY "CO_CD","VND_NO","INV_NO"`,
       );
-      const invoices = rows.rows.map(fromERP);
+      const invoices: Invoice[] = [];
+      for (const row of rows.rows) {
+        hit('DURING_SNAPSHOT');
+        if (fault?.kind === 'partial_read' && invoices.length >= fault.fail_after)
+          throw new Error('Injected partial ERP read');
+        invoices.push(fromERP(row));
+      }
+      if (fault?.kind === 'partial_read') throw new Error('Injected partial ERP read');
       await client.query('COMMIT');
       return invoices;
     } catch (error) {

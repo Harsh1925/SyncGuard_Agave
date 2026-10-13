@@ -122,9 +122,11 @@ multi-instance failover, and no tested cloud rollout. RDS is retained and deleti
 Destroying the CDK stack does not automatically delete that retained database. Secret
 rotation requires refreshing the environment file/restarting containers in this starter.
 
-## Deferred scope remains explicit
+## Current completion status
 
-The change does not invent a completed seeded chaos runner, automatic repair, AI extraction
-provider or safe AI→ERP financial write implementation. Ingress still returns 501 and
-unexecuted invariant results remain null. Full cross-process crash recovery and concurrent
-worker acceptance tests remain required before calling the finalized project complete.
+The migration originally supplied the core scaffold. Subsequent implementation added the
+executed seeded chaos runner, cross-process recovery/concurrency assertions, controlled
+simulator faults, validated ERP invoice ingress and the two-page Failure Lab. See
+`implementation-status.md` and `verification.md` for current evidence. Invariant outcomes
+remain unexecuted until assertions finish. Optional repair/PO work is excluded; live LLM
+calls and actual AWS rollout still require external configuration.

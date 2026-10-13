@@ -63,6 +63,26 @@ Postgres remains the durable queue required by the specification. Redis contains
 correctness-critical financial state. Money is a decimal string; bigint versions stay
 strings on the wire and use BigInt for comparisons.
 
+## Recruiter demo
+
+With Docker Desktop running, execute:
+
+```sh
+npm ci
+npm run demo -- 42
+```
+
+This builds an isolated recording environment and executes assertions for invoice
+create/update/delete, ten deliveries with concurrent worker instances, a real worker
+crash after PM commit, lease recovery, failed-snapshot safety, drift detection and stale
+update rejection after deletion. Open http://localhost:8180 for the dashboard and
+http://localhost:8100/demo/runs for persisted evidence. Normal application data is untouched.
+
+See [the acceptance matrix](docs/acceptance-matrix.md) for executed scenarios and
+verification limits. The scripted demo is complemented by `npm run chaos -- 42 20`, an executed seeded failure
+suite. The dashboard also supports validated synthetic invoice ingress and optional LLM
+extraction. Actual AWS deployment remains account-dependent.
+
 ## Local Docker setup
 
 Start Docker Desktop, then:
@@ -179,6 +199,20 @@ If you previously used the Python scaffold with edited SQLite source data, impor
 source data into the new ERP schema before polling. Bootstrap refuses an empty new source
 when old complete snapshots exist; it does not silently import or delete legacy invoices.
 
-The chaos execution harness, safe AI→ERP ingress, optional repair and full cross-process
-reliability proof remain extension points. AI ingress fails closed with 501. A seeded plan
-is not an executed chaos run, and unexecuted invariant results remain null.
+The executed chaos runner, safe invoice ingress and Failure Lab are implemented. Optional
+repair/PO validation are omitted. A planned run is not proof; invariant results become
+passed only after runtime assertions succeed. See the acceptance matrix for tested scenarios.
+
+## Required-feature commands
+
+```sh
+npm run test:integration        # Disposable Postgres/Redis; all tests
+npm run demo -- 42              # Build isolated demo and execute the walking/recovery suite
+npm run chaos -- 42 20          # Execute seeded failures against the running demo
+```
+
+Failure Lab: http://localhost:8180/operations. Choose a seed and named boundary, then run
+chaos and expand its result. For ingress use synthetic JSON without credentials, or set
+`OPENAI_API_KEY` and `OPENAI_MODEL` in the local environment and rebuild the API for optional
+LLM extraction. Financial validation is always deterministic. No live provider or AWS
+execution is implied by local tests.

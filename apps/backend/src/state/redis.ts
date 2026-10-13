@@ -8,16 +8,20 @@ export class RedisSupport {
     const client = createClient({
       url,
       disableOfflineQueue: true,
-      socket: { connectTimeout: 2000, reconnectStrategy: false },
+      socket: {
+        connectTimeout: 2000,
+        reconnectStrategy: (retries) => Math.min(100 * 2 ** Math.min(retries, 5), 3000),
+      },
     });
     client.on('error', () => {
       /* Optional acceleration; durable work remains in Postgres. */
     });
     try {
-      await client.connect();
+      this.client = client;
+      await Promise.race([client.connect(), sleep(2200)]);
       this.client = client;
     } catch {
-      if (client.isOpen) client.destroy();
+      /* Connection retries continue while callers fall back to Postgres. */
     }
   }
   get ready(): boolean {

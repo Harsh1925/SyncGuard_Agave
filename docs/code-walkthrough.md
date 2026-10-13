@@ -116,7 +116,7 @@ manual external edits can still race reads and need further acceptance coverage.
 ## Redis: state/redis.ts
 
 One helper owns cache reads/writes, queue wake hints and atomic rate counters. Offline
-command queueing and unbounded reconnection are disabled. Optional Redis failures never
+command queueing is disabled; connection retries use a capped three-second delay. Optional Redis failures never
 remove accepted Postgres work. The Lua rate script makes increment plus first-use expiry
 atomic. The Redis list is bounded to 100 hints and carries no authoritative invoice state.
 
@@ -124,7 +124,7 @@ atomic. The Redis list is bounded to 100 hints and carries no authoritative invo
 
 `App.tsx` owns the two routes. `Health.tsx` loads metrics and recent operations in parallel.
 Selecting a row opens the operation URL; `Operations.tsx` loads the ledger and audit timeline
-in parallel, validates an entered UUID and records a seeded chaos plan.
+in parallel, validates an entered UUID and embeds the executable Failure Lab.
 
 `useResource()` centralizes loading/error/retry behavior. Its effect aborts on cleanup and
 ignores results from obsolete requests. This matters when navigating quickly between
@@ -147,3 +147,54 @@ ports private. The only ingress is the nginx dashboard/API proxy from the config
 
 Synthesis and resource assertions prove template structure, not a successful EC2 boot.
 Actual AWS deployment and recovery must still be exercised separately.
+
+## Executed portfolio demo
+
+`compose.demo.yaml` runs a separate Postgres database, PM/ERP simulators, API and dashboard.
+`scripts/demo.ts` starts that environment and invokes the backend demo command. It passes
+arguments directly to Docker without a shell and fails if startup or a scenario fails.
+
+`apps/backend/src/demo/runner.ts` drives the real detector, Postgres queue, worker and HTTP
+PM adapter. It uses a database advisory lock to prevent overlapping demo runs. Each run
+creates a fresh invoice, so rerunning never truncates the database. A dedicated database
+name check blocks accidentally running the suite against the normal application database.
+
+The crash scenario spawns `worker-once` in a child process with the existing named fault
+hook. It asserts exit 86, confirms that PM committed while local status is still attempting,
+waits for lease expiry, then asserts `already_committed` recovery and one receipt. The
+other assertions cover ten deliveries, two worker instances, failed snapshot acceptance,
+in-flight drift deferral, manual edit detection, authoritative reconvergence and stale
+update rejection after deletion. External HTTP operations are outside ledger transactions.
+
+Runs and evidence use the existing `chaos_runs` table with `configuration.kind=scripted-demo`.
+`GET /demo/runs` exposes the latest 20 records; `GET /drift` exposes the latest 100 drift
+reports. These are bounded read-only views, not unrestricted history pagination. Completion
+means the recorded assertions passed; it does not mean the full randomized chaos specification
+or production reliability has been proven. See `acceptance-matrix.md` for tested scenarios.
+
+## Required-feature completion
+
+`chaos/runner.ts` reads persisted seeded plans, starts real worker processes, configures
+simulator faults and asserts final state. Critical hooks always run independently of the
+random seed. Fault settings are consumed atomically in Postgres and reset when a run ends.
+The PM dropped-response hook runs only after its receipt and invoice commit. Run creation
+returns 202; the dashboard monitors durable status rather than keeping an HTTP request open.
+
+`ingress/service.ts` records operation identity before extraction/writing, freezes the first
+normalized proposal, serializes business-identity writes and validates vendor/job references.
+The simulated ERP and ingress acceptance share one transaction; rollback prevents uncertain
+partial acceptance. ERP never needs an operation-ID column. Reusing an operation ID with
+changed input is refused; a same-input retry returns the previous result. Accepted own writes
+are correlated by fingerprint in the next source observation, without suppressing normal
+ERP→PM propagation. The optional extractor uses structured output via the documented
+[OpenAI Responses API](https://developers.openai.com/api/docs/guides/structured-outputs);
+all extracted values remain untrusted until domain validation.
+
+Worker leases are renewed while a record fence protects external effects. Redis outage
+falls back to Postgres/uncached reads and reconnects automatically. A subsequent poll marks
+abandoned IN_PROGRESS snapshots FAILED while holding the exclusive poller lock.
+
+`components/FailureLab.tsx` reuses shared resource/action hooks. Reads and requests abort on
+navigation, feedback stays beside the action, and running/failed/unexecuted evidence is
+shown explicitly. Fault execution is enabled only when DEMO_CONTROLS=true and the database
+is syncguard_demo. Normal/EC2 environments cannot activate simulator faults through the UI.

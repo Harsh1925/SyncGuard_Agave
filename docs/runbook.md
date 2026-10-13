@@ -44,8 +44,8 @@ logical operation; stale work remains suppressed.
 ## Redis outage
 
 Accepted work stays in Postgres. Connected processes fall back to polling/uncached metrics;
-PM's optional rate simulator degrades open. Restart processes after Redis recovery to
-reconnect in this starter. Deleting Redis data cannot delete operations or tombstones.
+PM's optional rate simulator degrades open. Connections retry with a capped delay after
+Redis recovery. Deleting Redis data cannot delete operations or tombstones.
 
 ## Chaos planning
 
@@ -53,3 +53,36 @@ reconnect in this starter. Deleting Redis data cannot delete operations or tombs
 `POST /chaos/plans` records one durably. Neither executes faults or marks invariants passed.
 The TypeScript PRNG differs from the earlier Python implementation; use TypeScript seeds
 for current runs. Historical Python code is available in Git history.
+
+## Executed chaos and controlled faults
+
+Start `npm run demo -- 42`, then use Failure Lab or `npm run chaos -- 42 20`. Only the isolated
+DEMO_CONTROLS environment permits execution. Each run records seed, configuration, planned
+fault sequence, actual evidence, counts and final invariant checks. Failed runs retain
+partial evidence; inspect the run's error before retrying with a fresh run ID.
+
+`POST /simulator/faults` accepts target erp/pm, kind, remaining, delay_ms and fail_after.
+ERP supports latency, transient_failure and partial_read; PM supports latency, lost_response,
+transient_failure and rate_limit. Counts/delays are bounded. Fault settings affect simulator
+reads/writes only, never the operational API's process. `kind=none, remaining=0` clears a target.
+
+Invoice ingress uses an operation_id, document and mode (synthetic/llm). Reuse the same
+operation ID/document after uncertain transport outcomes; choose a new ID for changed input.
+GET /ingress/operations exposes durable pending/accepted/refused records. An unavailable PM
+reference lookup leaves the proposal pending for explicit retry. Accepted invoices propagate
+through the next normal snapshot and worker delivery. The isolated UI has manual snapshot
+and worker-step buttons; the normal Compose stack uses its background processes.
+
+## Repeatable verification
+
+```sh
+npm run test:integration
+npm run demo -- 42
+npm run chaos -- 42 20
+npm run test:e2e
+```
+
+Test services use disposable ports 55432 and 56379 and are removed afterwards. Demo ports
+8100/8101/8102/8180 remain separate from normal application ports. The browser test uses
+installed system Chrome on macOS, or Playwright Chromium elsewhere. It creates synthetic
+invoices and recorded runs in the isolated database; it does not truncate application data.

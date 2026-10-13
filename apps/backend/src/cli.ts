@@ -11,6 +11,9 @@ import { seed, buildERP } from './simulators/erp.js';
 import { buildPM } from './simulators/pm.js';
 import { buildApi } from './api/app.js';
 import { plan } from './chaos/planner.js';
+import { demoEnabled } from './chaos/simulator.js';
+import { runChaos } from './chaos/runner.js';
+import { runDemo } from './demo/runner.js';
 
 const command = process.argv[2] ?? 'api';
 const settings = loadSettings();
@@ -22,7 +25,7 @@ process.once('SIGTERM', () => stop.abort());
 try {
   if (['api', 'pm', 'worker', 'poll', 'poll-loop'].includes(command))
     await redis.connect(settings.REDIS_URL);
-  const erp = new ERPAdapter(pool);
+  const erp = new ERPAdapter(pool, demoEnabled(settings.DATABASE_URL));
   const pm = new PMAdapter(settings.PM_URL);
   if (['migrate', 'bootstrap'].includes(command)) await migrate(pool);
   if (['seed', 'bootstrap'].includes(command)) await seed(pool);
@@ -32,7 +35,7 @@ try {
         ? await buildApi(pool, settings, redis)
         : command === 'erp'
           ? await buildERP(pool)
-          : await buildPM(pool, redis);
+          : await buildPM(pool, redis, demoEnabled(settings.DATABASE_URL));
     await app.listen({
       host: process.env.HOST ?? '127.0.0.1',
       port: Number(
@@ -45,6 +48,10 @@ try {
     await app.close();
   } else if (command === 'worker')
     await new SyncWorker(pool, settings, pm, redis).runForever(stop.signal);
+  else if (command === 'worker-once')
+    console.log(await new SyncWorker(pool, settings, pm, redis).runOnce());
+  else if (command === 'chaos-run') await runChaos(pool, settings, redis, process.argv[3]);
+  else if (command === 'demo') await runDemo(pool, settings, redis, Number(process.argv[3] ?? 42));
   else if (command === 'poll')
     console.log(JSON.stringify(await new SnapshotDetector(pool, erp, redis).run()));
   else if (command === 'poll-loop') {

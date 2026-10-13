@@ -234,3 +234,27 @@ li {
     scrollbar-color: auto;
   }
 }
+
+select,
+textarea {
+  font: inherit;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+textarea {
+  width: 100%;
+  resize: none;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+details {
+  border-top: 1px solid var(--border);
+  padding-block: 16px;
+}
+summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}

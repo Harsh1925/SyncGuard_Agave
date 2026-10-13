@@ -5,6 +5,8 @@ x-app: &app
     REDIS_URL: redis://redis:6379
     PM_URL: http://pm:8002
     HOST: 0.0.0.0
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    OPENAI_MODEL: ${OPENAI_MODEL:-}
     LEASE_SECONDS: 10
   restart: unless-stopped
   logging:

@@ -20,6 +20,11 @@ export class SnapshotDetector {
     try {
       await client.query('SELECT pg_advisory_lock(91002)');
       locked = true;
+      const abandoned = await client.query(
+        "UPDATE snapshots SET status='FAILED',completed_at=now(),error='Poll process abandoned snapshot' WHERE status='IN_PROGRESS' RETURNING id",
+      );
+      for (const row of abandoned.rows)
+        await audit(client, 'snapshot_failed', null, { snapshot_id: row.id, recovered: true });
       const previous =
         (
           await client.query(
@@ -58,7 +63,23 @@ export class SnapshotDetector {
             [id],
           );
           const operations = [];
-          for (const change of changes) operations.push(await enqueueChange(client, change));
+          for (const change of changes) {
+            if (change.fingerprint) {
+              const own = (
+                await client.query(
+                  "SELECT operation_id FROM ingress_operations WHERE logical_id=$1 AND expected_fingerprint=$2 AND status='accepted' LIMIT 1",
+                  [change.logicalId, change.fingerprint],
+                )
+              ).rows[0];
+              if (own)
+                await audit(client, 'own_write_correlated', null, {
+                  ingress_operation_id: own.operation_id,
+                  logical_id: change.logicalId,
+                  propagation: 'erp_to_pm_allowed',
+                });
+            }
+            operations.push(await enqueueChange(client, change));
+          }
           await audit(client, 'snapshot_completed', null, {
             snapshot_id: id,
             changes: changes.length,

@@ -67,3 +67,11 @@ The system-health page and timeline page share navigation, focus and error style
 
 Show UTC timestamps explicitly. Show unexecuted invariant results as unexecuted.
 Keep synthetic data separate from claims. Do not add entities or reverse synchronization.
+
+## Failure Lab extension
+
+Keep the financial-ledger palette and existing typography. Run status and invariant lists
+are the primary evidence; expandable sections hold the longer fault sequence. Native selects
+own crash-boundary and extraction-mode selection. Shared action/resource hooks own async
+feedback. Forms stack at narrow widths; document textareas have a fixed twelve-row height and scroll internally. Fault execution
+is confined to the isolated demo. Synthetic input is clearly distinguished from LLM extraction.
